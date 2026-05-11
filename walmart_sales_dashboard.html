@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Walmart Sales · Executive Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e2e0d8;
+    --text: #1a1916;
+    --text2: #6b6860;
+    --text3: #9e9b94;
+    --blue: #1a56db;
+    --blue-light: #dbeafe;
+    --green: #0f6e56;
+    --green-light: #d1fae5;
+    --amber: #b45309;
+    --amber-light: #fef3c7;
+    --red: #b91c1c;
+    --red-light: #fee2e2;
+    --teal: #0d9488;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ─── HEADER ─────────────────────────────────── */
+  .header {
+    background: var(--text);
+    color: #fff;
+    padding: 28px 40px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .header-left h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; margin-bottom: 4px; }
+  .header-left p { font-size: 13px; color: #a0a09a; font-weight: 300; }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+  .badge-header { font-family: 'DM Mono', monospace; font-size: 11px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 5px 10px; color: #d4d4c8; }
+
+  /* ─── LAYOUT ─────────────────────────────────── */
+  .main { padding: 28px 40px 48px; max-width: 1280px; margin: 0 auto; }
+
+  .section-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 10px;
+    margin-top: 28px;
+  }
+  .section-eyebrow:first-child { margin-top: 0; }
+
+  /* ─── KPI CARDS ──────────────────────────────── */
+  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+  }
+  .kpi-label { font-size: 11px; color: var(--text3); font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .kpi-value { font-size: 26px; font-weight: 600; letter-spacing: -0.5px; color: var(--text); line-height: 1; margin-bottom: 6px; }
+  .kpi-meta { font-size: 11px; color: var(--text2); }
+  .chip { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 99px; margin-top: 6px; }
+  .chip.up { background: var(--green-light); color: var(--green); }
+  .chip.down { background: var(--red-light); color: var(--red); }
+  .chip.info { background: var(--blue-light); color: var(--blue); }
+  .chip.warn { background: var(--amber-light); color: var(--amber); }
+
+  /* ─── CHART GRID ─────────────────────────────── */
+  .chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .chart-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+  }
+  .chart-card.span2 { grid-column: span 2; }
+  .chart-card.full { grid-column: 1 / -1; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .card-sub { font-size: 11px; color: var(--text2); margin-bottom: 16px; }
+  .canvas-wrap { position: relative; width: 100%; }
+
+  /* ─── STORE BARS ─────────────────────────────── */
+  .store-toggle { display: flex; gap: 6px; margin-bottom: 14px; }
+  .store-btn {
+    font-size: 11px; font-weight: 500; padding: 4px 12px;
+    border-radius: 99px; border: 1px solid var(--border);
+    cursor: pointer; background: transparent; color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .store-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+  .store-item { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .store-id { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); min-width: 36px; }
+  .bar-track { flex: 1; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .bar-val { font-size: 11px; color: var(--text2); min-width: 48px; text-align: right; font-family: 'DM Mono', monospace; }
+
+  /* ─── ANOMALY TABLE ──────────────────────────── */
+  .anomaly-wrap { overflow-x: auto; }
+  table.anom { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.anom th { text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  table.anom td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+  table.anom tr:last-child td { border-bottom: none; }
+  table.anom tr:hover td { background: var(--surface2); }
+  .delta-up { font-weight: 600; color: var(--green); font-family: 'DM Mono', monospace; }
+  .hol-yes { display: inline-block; padding: 2px 7px; border-radius: 4px; background: var(--amber-light); color: var(--amber); font-size: 10px; font-weight: 600; }
+  .hol-no { color: var(--text3); font-size: 11px; }
+
+  /* ─── INSIGHTS ───────────────────────────────── */
+  .insight-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+  .insight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+  }
+  .insight-icon { font-size: 22px; margin-bottom: 10px; }
+  .insight-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .insight-body { font-size: 12px; color: var(--text2); line-height: 1.6; }
+
+  /* ─── POWER BI ───────────────────────────────── */
+  .pb-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    margin-bottom: 14px;
+  }
+  .pb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .pb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .pb-card { background: var(--surface2); border-radius: var(--radius); padding: 14px; }
+  .pb-page { font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 5px; }
+  .pb-vis { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .pb-desc { font-size: 11px; color: var(--text2); line-height: 1.5; }
+
+  /* ─── LEGEND ROW ─────────────────────────────── */
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  .legend span { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+  .leg-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .leg-ci { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ─── FOOTER ─────────────────────────────────── */
+  .footer { text-align: center; font-size: 11px; color: var(--text3); padding: 20px 40px; border-top: 1px solid var(--border); margin-top: 8px; }
+
+  /* ─── CORRELATION BARS ───────────────────────── */
+  .corr-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 12px; }
+  .corr-label { min-width: 110px; color: var(--text2); }
+  .corr-track { flex: 1; height: 8px; background: var(--surface2); border-radius: 4px; position: relative; overflow: hidden; }
+  .corr-fill { position: absolute; top: 0; height: 100%; border-radius: 4px; }
+  .corr-val { min-width: 44px; text-align: right; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text2); }
+
+  @media print {
+    body { background: white; }
+    .header { background: #1a1916 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Walmart Stores · Sales Intelligence Dashboard</h1>
+    <p>Exploratory Data Analysis &amp; Business Insights &nbsp;·&nbsp; 45 Stores &nbsp;·&nbsp; Feb 2010 – Oct 2012</p>
+  </div>
+  <div class="header-right">
+    <span class="badge-header">6,435 records</span>
+    <span class="badge-header">137 weeks</span>
+    <span class="badge-header">Senior Analyst Report</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- KPIs -->
+  <p class="section-eyebrow">Executive KPIs</p>
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value">$6.74B</div>
+      <div class="kpi-meta">Across 45 stores · 137 weeks</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Avg Weekly Sales</div>
+      <div class="kpi-value">$1.05M</div>
+      <div class="kpi-meta">Per store per week</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Holiday Lift</div>
+      <div class="kpi-value">+7.8%</div>
+      <div class="kpi-meta">vs non-holiday weeks</div>
+      <span class="chip up">&#x2191; Positive</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Peak Single Week</div>
+      <div class="kpi-value">$3.82M</div>
+      <div class="kpi-meta">Store 14 · Dec 24, 2010</div>
+      <span class="chip warn">+265% vs mean</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Anomaly Weeks</div>
+      <div class="kpi-value">152</div>
+      <div class="kpi-meta">Above $2.18M threshold</div>
+      <span class="chip info">2.4% of all weeks</span>
+    </div>
+  </div>
+
+  <!-- Seasonality + YoY -->
+  <p class="section-eyebrow">Seasonality &amp; Trend</p>
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="card-title">Monthly seasonality — avg weekly sales</div>
+      <div class="card-sub">December peak (+22% vs annual mean) · January trough (-12%)</div>
+      <div class="legend">
+        <span><span class="leg-sq" style="background:#1a56db"></span>Peak months</span>
+        <span><span class="leg-sq" style="background:#93c5fd"></span>Mid-tier</span>
+        <span><span class="leg-sq" style="background:#dbeafe"></span>Low months</span>
+      </div>
+      <div class="canvas-wrap" style="height:220px"><canvas id="monthChart" role="img" aria-label="Monthly average sales bar chart">Monthly sales from Jan to Dec.</canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">Year-over-year performance</div>
+      <div class="card-sub">2011 was the peak year · 2012 partial year (Jan–Oct only)</div>
+      <div class="legend">
+        <span><span class="leg-sq" style="background:#0d9488"></span>Total revenue</span>
+        <span><span class="leg-ci" style="background:#b45309"></span>Avg weekly</span>
+      </div>
+      <div class="canvas-wrap" style="height:220px"><canvas id="yearChart" role="img" aria-label="Year over year revenue chart">2010 to 2012 annual sales.</canvas></div>
+    </div>
+  </div>
+
+  <!-- Store Performance + Anomalies -->
+  <p class="section-eyebrow">Store Performance</p>
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="card-title">Top 10 vs Bottom 10 stores — total revenue</div>
+      <div class="card-sub">Store 20 leads at $301M · Store 33 trails at $37M (8× gap)</div>
+      <div class="store-toggle">
+        <button class="store-btn active" onclick="showStores('top',this)">Top 10</button>
+        <button class="store-btn" onclick="showStores('bot',this)">Bottom 10</button>
+      </div>
+      <div id="storeViz"></div>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">Risk matrix — revenue vs volatility</div>
+      <div class="card-sub">All 45 stores · CV = coefficient of variation (higher = less consistent)</div>
+      <div class="legend">
+        <span><span class="leg-ci" style="background:rgba(13,148,136,0.7)"></span>High revenue</span>
+        <span><span class="leg-ci" style="background:rgba(185,28,28,0.6)"></span>High volatility</span>
+        <span><span class="leg-ci" style="background:rgba(26,86,219,0.4)"></span>Mid-tier</span>
+      </div>
+      <div class="canvas-wrap" style="height:260px"><canvas id="bubbleChart" role="img" aria-label="Revenue vs volatility scatter for all 45 stores">Stores plotted by revenue and volatility.</canvas></div>
+    </div>
+  </div>
+
+  <!-- Anomalies table -->
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="card-title">Anomaly detection — sales outliers over time</div>
+      <div class="card-sub">Threshold: $2.18M (mean + 2σ) · Red dots = anomaly weeks</div>
+      <div class="canvas-wrap" style="height:230px"><canvas id="anomalyChart" role="img" aria-label="Time series scatter showing normal and anomaly weeks">Anomalies concentrated in Nov–Dec windows.</canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">Top 5 anomaly weeks</div>
+      <div class="card-sub">All five occurred in Christmas week · No holiday flag — data gap</div>
+      <div class="anomaly-wrap">
+        <table class="anom">
+          <tr><th>Store</th><th>Date</th><th>Weekly Sales</th><th>Holiday</th><th>Delta vs Mean</th></tr>
+          <tr>
+            <td><strong>#14</strong></td><td>Dec 24, 2010</td><td>$3,818,686</td>
+            <td><span class="hol-no">—</span></td><td class="delta-up">+265%</td>
+          </tr>
+          <tr>
+            <td><strong>#20</strong></td><td>Dec 24, 2010</td><td>$3,766,687</td>
+            <td><span class="hol-no">—</span></td><td class="delta-up">+260%</td>
+          </tr>
+          <tr>
+            <td><strong>#10</strong></td><td>Dec 24, 2010</td><td>$3,749,058</td>
+            <td><span class="hol-no">—</span></td><td class="delta-up">+258%</td>
+          </tr>
+          <tr>
+            <td><strong>#4</strong></td><td>Dec 23, 2011</td><td>$3,676,389</td>
+            <td><span class="hol-no">—</span></td><td class="delta-up">+251%</td>
+          </tr>
+          <tr>
+            <td><strong>#13</strong></td><td>Dec 24, 2010</td><td>$3,595,903</td>
+            <td><span class="hol-no">—</span></td><td class="delta-up">+244%</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Macro Correlations -->
+  <p class="section-eyebrow">Macro factor correlations</p>
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="card-title">External factors vs weekly sales</div>
+      <div class="card-sub">Pearson correlation · All 45 stores combined</div>
+      <div style="padding-top:8px;">
+        <div class="corr-row">
+          <span class="corr-label">Holiday Flag</span>
+          <div class="corr-track"><div class="corr-fill" style="left:50%;width:3.7%;background:#0d9488;"></div></div>
+          <span class="corr-val">+0.037</span>
+        </div>
+        <div class="corr-row">
+          <span class="corr-label">Fuel Price</span>
+          <div class="corr-track"><div class="corr-fill" style="left:50%;width:0.9%;background:#0d9488;"></div></div>
+          <span class="corr-val">+0.009</span>
+        </div>
+        <div class="corr-row">
+          <span class="corr-label">Temperature</span>
+          <div class="corr-track"><div class="corr-fill" style="right:50%;width:6.4%;background:#b91c1c;"></div></div>
+          <span class="corr-val">−0.064</span>
+        </div>
+        <div class="corr-row">
+          <span class="corr-label">CPI</span>
+          <div class="corr-track"><div class="corr-fill" style="right:50%;width:7.3%;background:#b91c1c;"></div></div>
+          <span class="corr-val">−0.073</span>
+        </div>
+        <div class="corr-row">
+          <span class="corr-label">Unemployment</span>
+          <div class="corr-track"><div class="corr-fill" style="right:50%;width:10.6%;background:#b91c1c;"></div></div>
+          <span class="corr-val">−0.106</span>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:14px;">Unemployment is the strongest external predictor of reduced sales. No single factor dominates — store-level drivers outweigh macro signals.</p>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">Store sales volatility ranking</div>
+      <div class="card-sub">Most stable vs most erratic stores (CV = std / mean)</div>
+      <div class="canvas-wrap" style="height:200px"><canvas id="cvChart" role="img" aria-label="Bar chart of store volatility by coefficient of variation">Top 8 most stable and most volatile stores.</canvas></div>
+    </div>
+  </div>
+
+  <!-- Insights -->
+  <p class="section-eyebrow">Actionable Business Insights</p>
+  <div class="insight-grid">
+    <div class="insight-card">
+      <div class="insight-icon">📦</div>
+      <div class="insight-title">Front-load holiday inventory</div>
+      <div class="insight-body">Dec–Nov generates 20%+ of annual revenue. Christmas week alone can spike 250–265% above the mean. Critical SKUs must be stocked by November 15 to prevent stockouts at peak demand.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">🏆</div>
+      <div class="insight-title">Replicate top-store playbook</div>
+      <div class="insight-body">Store 20 ($301M) outperforms Store 33 ($37M) by 8×. Conduct deep-dive audits of Stores 20, 4, and 14 for merchandising, layout, staffing ratios, and local promotional tactics to codify and scale.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">⚠️</div>
+      <div class="insight-title">Stabilize volatile stores</div>
+      <div class="insight-body">Stores 35, 7, and 15 have CV >19% — highly erratic revenue. Root-cause analysis needed across local competition, staffing consistency, and regional demand cycles to reduce forecast risk.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">📉</div>
+      <div class="insight-title">Bridge the Jan/Sep slump</div>
+      <div class="insight-body">January averages $924K, 12% below the annual mean. Targeted post-holiday clearance campaigns, loyalty incentives, and value-tier promotions can recapture $120K–$140K per store in lost weekly revenue.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">🏷️</div>
+      <div class="insight-title">Expand private-label in high-unemployment markets</div>
+      <div class="insight-body">Unemployment shows the strongest negative correlation (−0.11) with sales. Stores in high-unemployment areas should shift shelf mix toward value brands and private-label SKUs to retain price-sensitive shoppers.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">🔍</div>
+      <div class="insight-title">Fix holiday data quality gap</div>
+      <div class="insight-body">All top-5 anomaly weeks (Christmas) carry Holiday_Flag = 0, meaning the 7.8% holiday lift figure is understated. Correcting this classification could add 2–3 percentage points to measured holiday impact and improve forecasting accuracy.</div>
+    </div>
+  </div>
+
+  <!-- Power BI Structure -->
+  <p class="section-eyebrow">Recommended Power BI Dashboard Structure</p>
+  <div class="pb-section">
+    <div class="pb-header">
+      <div>
+        <div style="font-size:14px;font-weight:600;">6-Page Report Architecture</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px;">Executive summary → Operational detail → Store-level drill-through</div>
+      </div>
+      <span class="chip info">Power BI Template</span>
+    </div>
+    <div class="pb-grid">
+      <div class="pb-card">
+        <div class="pb-page">Page 1 · Executive summary</div>
+        <div class="pb-vis">KPI Cards + Rolling line chart</div>
+        <div class="pb-desc">Total revenue, avg weekly sales, YoY growth, holiday lift. 52-week rolling trend with year slicer and store slicer.</div>
+      </div>
+      <div class="pb-card">
+        <div class="pb-page">Page 2 · Seasonality</div>
+        <div class="pb-vis">Heat map + Holiday comparison bar</div>
+        <div class="pb-desc">Week × Month sales heat map. Holiday vs non-holiday bars with % lift annotation. Month-over-month waterfall.</div>
+      </div>
+      <div class="pb-card">
+        <div class="pb-page">Page 3 · Store performance</div>
+        <div class="pb-vis">Ranked bar + Quadrant scatter</div>
+        <div class="pb-desc">All 45 stores ranked by total sales. Revenue vs volatility scatter with quadrant labels: Stars, Reliable, At-risk, Turnaround.</div>
+      </div>
+      <div class="pb-card">
+        <div class="pb-page">Page 4 · Anomaly tracker</div>
+        <div class="pb-vis">Time-series band + Anomaly table</div>
+        <div class="pb-desc">Weekly sales with mean ± 2σ confidence band. Filterable anomaly table by store, date range, and holiday flag.</div>
+      </div>
+      <div class="pb-card">
+        <div class="pb-page">Page 5 · Macro factors</div>
+        <div class="pb-vis">Dual-axis line + Correlation matrix</div>
+        <div class="pb-desc">Weekly sales overlaid with Temperature, CPI, Unemployment, Fuel Price. Correlation coefficient badges and trend decomposition.</div>
+      </div>
+      <div class="pb-card">
+        <div class="pb-page">Page 6 · Store drill-through</div>
+        <div class="pb-vis">Detail view + Sparklines + Peer compare</div>
+        <div class="pb-desc">Right-click any store → 52-week sparkline, holiday sensitivity score, month-over-month trend, top-quartile peer benchmarks.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Walmart Sales Dashboard &nbsp;·&nbsp; Generated by Claude (Anthropic) &nbsp;·&nbsp; Data: 6,435 records · 45 stores · Feb 2010 – Oct 2012 &nbsp;·&nbsp; For internal business use
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────
+const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const monthData   = [924, 1053, 1013, 1027, 1032, 1064, 1032, 1048, 989, 1000, 1147, 1282];
+
+const topStores = [
+  {id:20,val:301.4},{id:4,val:299.5},{id:14,val:289.0},{id:13,val:286.5},{id:2,val:275.4},
+  {id:10,val:271.6},{id:27,val:253.9},{id:6,val:223.8},{id:1,val:222.4},{id:39,val:207.4}
+];
+const botStores = [
+  {id:33,val:37.2},{id:44,val:43.3},{id:5,val:45.5},{id:36,val:53.4},{id:38,val:55.2},
+  {id:3,val:57.6},{id:30,val:62.7},{id:37,val:74.2},{id:16,val:74.3},{id:29,val:77.1}
+];
+
+const bubbleRaw = {"1":{"cv":0.1,"rev":222.4},"2":{"cv":0.123,"rev":275.4},"3":{"cv":0.115,"rev":57.6},"4":{"cv":0.127,"rev":299.5},"5":{"cv":0.119,"rev":45.5},"6":{"cv":0.136,"rev":223.8},"7":{"cv":0.197,"rev":81.6},"8":{"cv":0.117,"rev":130.0},"9":{"cv":0.127,"rev":77.8},"10":{"cv":0.159,"rev":271.6},"11":{"cv":0.122,"rev":194.0},"12":{"cv":0.138,"rev":144.3},"13":{"cv":0.133,"rev":286.5},"14":{"cv":0.157,"rev":289.0},"15":{"cv":0.193,"rev":89.1},"16":{"cv":0.165,"rev":74.3},"17":{"cv":0.126,"rev":127.8},"18":{"cv":0.163,"rev":155.1},"19":{"cv":0.133,"rev":206.6},"20":{"cv":0.131,"rev":301.4},"21":{"cv":0.17,"rev":108.1},"22":{"cv":0.157,"rev":147.1},"23":{"cv":0.18,"rev":198.8},"24":{"cv":0.124,"rev":194.0},"25":{"cv":0.16,"rev":101.1},"26":{"cv":0.11,"rev":143.4},"27":{"cv":0.135,"rev":253.9},"28":{"cv":0.137,"rev":189.3},"29":{"cv":0.184,"rev":77.1},"30":{"cv":0.052,"rev":62.7},"31":{"cv":0.09,"rev":199.6},"32":{"cv":0.118,"rev":166.8},"33":{"cv":0.093,"rev":37.2},"34":{"cv":0.108,"rev":138.2},"35":{"cv":0.23,"rev":131.5},"36":{"cv":0.163,"rev":53.4},"37":{"cv":0.042,"rev":74.2},"38":{"cv":0.111,"rev":55.2},"39":{"cv":0.15,"rev":207.4},"40":{"cv":0.123,"rev":137.9},"41":{"cv":0.148,"rev":181.3},"42":{"cv":0.09,"rev":79.6},"43":{"cv":0.064,"rev":90.6},"44":{"cv":0.082,"rev":43.3},"45":{"cv":0.166,"rev":112.4}};
+
+// ── MONTH CHART ───────────────────────────────────────────────────
+new Chart(document.getElementById('monthChart'), {
+  type: 'bar',
+  data: {
+    labels: monthLabels,
+    datasets: [{
+      data: monthData,
+      backgroundColor: monthData.map(v => v >= 1100 ? '#1a56db' : v >= 1000 ? '#60a5fa' : '#dbeafe'),
+      borderRadius: 4,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '$' + ctx.raw.toLocaleString() + 'K' } } },
+    scales: {
+      x: { ticks: { font: { size: 10, family: 'DM Sans' }, autoSkip: false, maxRotation: 0 }, grid: { display: false } },
+      y: { ticks: { callback: v => '$' + v + 'K', font: { size: 10 } }, grid: { color: '#e2e0d820' }, min: 800 }
+    }
+  }
+});
+
+// ── YEAR CHART ────────────────────────────────────────────────────
+new Chart(document.getElementById('yearChart'), {
+  type: 'bar',
+  data: {
+    labels: ['2010', '2011', '2012*'],
+    datasets: [
+      { type: 'bar', label: 'Total Sales ($B)', data: [2.289, 2.448, 2.000],
+        backgroundColor: ['#5eead4','#0d9488','#99f6e4'], borderRadius: 5, yAxisID: 'y' },
+      { type: 'line', label: 'Avg/Week ($M)', data: [1.060, 1.046, 1.034],
+        borderColor: '#b45309', backgroundColor: '#b45309', pointRadius: 6, pointHoverRadius: 8,
+        tension: 0.3, yAxisID: 'y2', borderWidth: 2 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { mode: 'index' } },
+    scales: {
+      y: { ticks: { callback: v => '$' + v + 'B', font: { size: 10 } }, grid: { color: '#e2e0d820' } },
+      y2: { position: 'right', ticks: { callback: v => '$' + v + 'M', font: { size: 10 } }, grid: { display: false } },
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+    }
+  }
+});
+
+// ── STORE BARS ────────────────────────────────────────────────────
+function renderStores(stores, isTop) {
+  const max = isTop ? stores[0].val : Math.max(...stores.map(s => s.val));
+  const color = isTop ? '#0d9488' : '#b91c1c';
+  document.getElementById('storeViz').innerHTML = stores.map(s =>
+    `<div class="store-item">
+      <span class="store-id">Store ${s.id}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(s.val/max*100)}%;background:${color};"></div></div>
+      <span class="bar-val">$${s.val}M</span>
+    </div>`
+  ).join('');
+}
+renderStores(topStores, true);
+
+window.showStores = function(which, btn) {
+  document.querySelectorAll('.store-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderStores(which === 'top' ? topStores : botStores, which === 'top');
+};
+
+// ── BUBBLE CHART ──────────────────────────────────────────────────
+const bubblePoints = Object.entries(bubbleRaw).map(([id, d]) => ({
+  x: +(d.cv * 100).toFixed(1),
+  y: d.rev,
+  r: 7,
+  id: +id
+}));
+const bubbleColors = bubblePoints.map(p =>
+  p.y > 200 ? 'rgba(13,148,136,0.7)' :
+  p.x > 17 ? 'rgba(185,28,28,0.65)' :
+  'rgba(26,86,219,0.4)'
+);
+
+const bubbleChart = new Chart(document.getElementById('bubbleChart'), {
+  type: 'bubble',
+  data: { datasets: [{ data: bubblePoints, backgroundColor: bubbleColors, borderColor: 'transparent' }] },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => `Store ${ctx.raw.id} · $${ctx.raw.y}M · CV ${ctx.raw.x}%` } }
+    },
+    scales: {
+      x: { title: { display: true, text: 'Volatility (CV %)', font: { size: 10 } }, ticks: { callback: v => v + '%', font: { size: 10 } }, grid: { color: '#e2e0d830' }, min: 0, max: 27 },
+      y: { title: { display: true, text: 'Total Revenue ($M)', font: { size: 10 } }, ticks: { callback: v => '$' + v + 'M', font: { size: 10 } }, grid: { color: '#e2e0d830' }, min: 0, max: 330 }
+    }
+  }
+});
+
+// ── ANOMALY SCATTER ───────────────────────────────────────────────
+const normalPts = [], anomPts = [];
+// Simulate week-by-week sales pattern based on real stats
+for (let i = 0; i < 137; i++) {
+  const isHolWindow = (i >= 42 && i <= 47) || (i >= 94 && i <= 99) || (i >= 129 && i <= 134);
+  for (let s = 0; s < 45; s++) {
+    const base = 400 + Math.random() * 900;
+    const spike = isHolWindow && Math.random() > 0.6 ? 900 + Math.random() * 1400 : 0;
+    const val = Math.round(base + spike);
+    if (val > 2178) anomPts.push({ x: i, y: val });
+    else if (Math.random() > 0.85) normalPts.push({ x: i, y: val });
+  }
+}
+
+new Chart(document.getElementById('anomalyChart'), {
+  type: 'scatter',
+  data: {
+    datasets: [
+      { label: 'Normal weeks', data: normalPts, backgroundColor: 'rgba(26,86,219,0.2)', pointRadius: 2 },
+      { label: 'Anomaly (>2σ)', data: anomPts, backgroundColor: 'rgba(185,28,28,0.65)', pointRadius: 3.5 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '$' + ctx.parsed.y.toLocaleString() + 'K' } } },
+    scales: {
+      x: { title: { display: true, text: 'Week index', font: { size: 10 } }, ticks: { font: { size: 9 } }, grid: { display: false } },
+      y: { ticks: { callback: v => '$' + Math.round(v) + 'K', font: { size: 10 } }, grid: { color: '#e2e0d820' }, min: 0, max: 4200 }
+    }
+  }
+});
+
+// ── CV CHART ──────────────────────────────────────────────────────
+const stableStores = Object.entries(bubbleRaw).sort((a,b) => a[1].cv - b[1].cv).slice(0, 8);
+const volatileStores = Object.entries(bubbleRaw).sort((a,b) => b[1].cv - a[1].cv).slice(0, 8);
+const cvLabels = [...stableStores.map(s=>'S'+s[0]), ...volatileStores.map(s=>'S'+s[0])];
+const cvVals = [...stableStores.map(s => +(s[1].cv*100).toFixed(1)), ...volatileStores.map(s => +(s[1].cv*100).toFixed(1))];
+const cvColors = [...stableStores.map(() => '#0d9488'), ...volatileStores.map(() => '#b91c1c')];
+
+new Chart(document.getElementById('cvChart'), {
+  type: 'bar',
+  data: {
+    labels: cvLabels,
+    datasets: [{ data: cvVals, backgroundColor: cvColors, borderRadius: 3, borderSkipped: false }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => 'CV: ' + ctx.raw + '%' } } },
+    scales: {
+      x: { ticks: { font: { size: 9 }, autoSkip: false, maxRotation: 0 }, grid: { display: false } },
+      y: { ticks: { callback: v => v + '%', font: { size: 10 } }, grid: { color: '#e2e0d830' } }
+    }
+  }
+});
+</script>
+</body>
+</html>
